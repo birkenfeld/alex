@@ -181,8 +181,7 @@ alex cli file basename script = do
            hPutStr out_h str
 
    -- Inject the tab size
-   hPutStrLn out_h $ "alex_tab_size :: Int"
-   hPutStrLn out_h $ "alex_tab_size = " ++ show (tab_size :: Int)
+   hPutStrLn out_h $ "const ALEX_TAB_SIZE: isize = " ++ show (tab_size :: Int) ++ ";"
 
    let dfa = scanner2dfa encoding scanner_final scs
        min_dfa = minimizeDFA dfa
@@ -326,19 +325,19 @@ getScheme directives =
           | otherwise -> dieAlex ("unknown wrapper type " ++ single)
         _many -> dieAlex "multiple %wrapper directives"
 
--- inject some code, and add a {-# LINE #-} pragma at the top
+-- inject some code, and add a comment at the top
 injectCode :: Maybe (AlexPosn,Code) -> FilePath -> Handle -> IO ()
 injectCode Nothing _ _ = return ()
 injectCode (Just (AlexPn _ ln _,code)) filename hdl = do
-  hPutStrLn hdl ("{-# LINE " ++ show ln ++ " \"" ++ filename ++ "\" #-}")
+  hPutStrLn hdl ("// Original location: " ++ filename ++ ", line " ++ show ln ++ "\n")
   hPutStrLn hdl code
 
 optsToInject :: Target -> [CLIFlags] -> String
-optsToInject GhcTarget _ = optNoWarnings ++ "{-# LANGUAGE CPP,MagicHash #-}\n"
-optsToInject _         _ = optNoWarnings ++ "{-# LANGUAGE CPP #-}\n"
+optsToInject GhcTarget _ = error "GHC target is not supported"
+optsToInject _         _ = optNoWarnings
 
 optNoWarnings :: String
-optNoWarnings = "{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-missing-signatures #-}\n"
+optNoWarnings = "// put #![allow(...)] here\n"
 
 importsToInject :: Target -> [CLIFlags] -> String
 importsToInject _ cli = always_imports ++ debug_imports ++ glaexts_import
@@ -354,34 +353,14 @@ importsToInject _ cli = always_imports ++ debug_imports ++ glaexts_import
 -- WORDS_BIGENDIAN (see GenericTemplate.hs).
 
 always_imports :: String
-always_imports = "#if __GLASGOW_HASKELL__ >= 603\n" ++
-                 "#include \"ghcconfig.h\"\n" ++
-                 "#elif defined(__GLASGOW_HASKELL__)\n" ++
-                 "#include \"config.h\"\n" ++
-                 "#endif\n" ++
-                 "#if __GLASGOW_HASKELL__ >= 503\n" ++
-                 "import Data.Array\n" ++
-                 "import Data.Array.Base (unsafeAt)\n" ++
-                 "#else\n" ++
-                 "import Array\n" ++
-                 "#endif\n"
+always_imports = "#[macro_use] use corollary_support::*;\n" ++
+                 "\n\n"
 
 import_glaexts :: String
-import_glaexts = "#if __GLASGOW_HASKELL__ >= 503\n" ++
-                 "import GHC.Exts\n" ++
-                 "#else\n" ++
-                 "import GlaExts\n" ++
-                 "#endif\n"
+import_glaexts = ""
 
 import_debug :: String
-import_debug   = "#if __GLASGOW_HASKELL__ >= 503\n" ++
-                 "import System.IO\n" ++
-                 "import System.IO.Unsafe\n" ++
-                 "import Debug.Trace\n" ++
-                 "#else\n" ++
-                 "import IO\n" ++
-                 "import IOExts\n" ++
-                 "#endif\n"
+import_debug   = error "Debug mode is not supported"
 
 templateDir :: IO FilePath -> [CLIFlags] -> IO FilePath
 templateDir def cli

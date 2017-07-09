@@ -173,8 +173,11 @@ code (p,_,inp) len = do
 	  case c of
 		'{'  -> go inp (n+1) (c:cs)
 		'}'  -> go inp (n-1) (c:cs)
-		'\'' -> go_char inp n (c:cs)
-		'\"' -> go_str inp n (c:cs) '\"'
+		-- Removed for Rust, since it doesn't work well with lifetimes,
+		-- and string escape rules are different. Justt make sure to
+		-- balance the braces even in strings and comments.
+		-- '\'' -> go_char inp n (c:cs)
+		-- '\"' -> go_str inp n (c:cs) '\"'
 		c    -> go inp n (c:cs)
 
 	-- try to catch occurrences of ' within an identifier
@@ -193,7 +196,7 @@ code (p,_,inp) len = do
 			     Just (d,inp)  -> go_str inp n (d:c:cs) end
 		   c -> go_str inp n (c:cs) end
 
-  err inp = do setInput inp; lexError "lexical error in code fragment"
+  err inp = do setInput inp; lexError "lexical error in code fragment (unbalanced braces?)"
 
 
 
