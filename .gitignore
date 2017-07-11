@@ -49,3 +49,5 @@
 /tests/*.[gn].hs
 /tests/*.[gn].bin
 /tests/*.[gn].exe
+.stack-work
+stack.yaml
