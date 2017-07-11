@@ -46,12 +46,14 @@ pub enum AlexReturn<a> {
 pub use self::AlexReturn::*;
 
 pub fn alexScan(input: (Position, InputStream), sc: isize)
-                -> AlexReturn<Box<Fn(Position, isize, InputStream) -> P<CToken>>> {
+                -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>> {
     // TODO first argument should be "undefined"
     alexScanUser(false, input, sc)
 }
 
-pub fn alexScanUser(user: bool, input: AlexInput, sc: isize) -> AlexReturn<Box<Fn(Position, isize, InputStream) -> P<CToken>>> {
+pub fn alexScanUser(user: bool, input: AlexInput, sc: isize)
+                    -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>>
+{
     match alex_scan_tkn(user, input.clone(), (0), input.clone(), sc, AlexNone) {
         (AlexNone, input_q) => {
             match alexGetByte(input) {
@@ -118,7 +120,7 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
 #ifdef ALEX_DEBUG
                 println!("State: {}, char: {}", IBOX(s), c);
 #endif
-                match fromIntegral(c as isize) {
+                match c as isize {
                     ord_c => {
                         let base = alexIndexInt32OffAddr(&ALEX_BASE, s);
                         let offset = base + ord_c;

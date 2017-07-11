@@ -331,7 +331,7 @@ extractActions scheme scanner = (scanner{scannerTokens = new_tokens}, decl_str)
 
   mkDecl fun code = case scheme of
     _ -> str "fn " . str fun
-       . str "(pos: Position, len: isize, inp: InputStream) -> P<CToken> {" . nl
+       . str "(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {" . nl
        . str code . nl . str "}" . nl . nl
 
   act_names = map (\n -> "alex_action_" ++ show (n::Int)) [0..]

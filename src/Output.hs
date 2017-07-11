@@ -11,7 +11,6 @@
 module Output (outputDFA) where
 
 import AbsSyn
-import CharSet
 import Util
 import qualified Map
 import qualified Data.IntMap as IntMap
@@ -30,16 +29,12 @@ import Data.List ( maximumBy, sortBy, groupBy, mapAccumR, intercalate )
 -- Printing the output
 
 outputDFA :: Target -> Int -> String -> Scheme -> DFA SNum Code -> ShowS
-outputDFA target _ _ scheme dfa
+outputDFA target _ _ _scheme dfa
   = interleave_shows nl
         [outputBase, outputTable, outputCheck, outputDefault,
          outputAccept, outputActions, outputSigs]
   where
     (base, table, check, deflt, accept) = mkTables dfa
-
-    intty = case target of
-      GhcTarget -> error "GHC target is not supported"
-      HaskellTarget -> "isize"
 
     table_size = length table - 1
     n_states   = length base - 1
@@ -62,7 +57,7 @@ outputDFA target _ _ scheme dfa
       . interleave_shows (str ",\n    ") contents
       . str ",\n];"
 
-    do_array hex_chars nm upper_bound ints = -- trace ("do_array: " ++ nm) $
+    do_array _hex_chars nm upper_bound ints = -- trace ("do_array: " ++ nm) $
      case target of
       GhcTarget -> error "GHC target is not supported"
       _ ->
@@ -89,7 +84,7 @@ outputDFA target _ _ scheme dfa
         actionsArray = formatArray "array" nacts actsInOrder
         body :: ShowS
         body = str "const " . str actions_nm
-          . str ": [fn(Position, isize, InputStream) -> P<CToken>; "
+          . str ": [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>; "
           . shows nacts . str "] = " . actionsArray . nl
 
     outputSigs = str ""
@@ -100,9 +95,9 @@ outputDFA target _ _ scheme dfa
       = (idx, str "AlexAccSkip")
     outputAccs idx (Acc _ (Just _) Nothing NoRightContext : [])
       = (idx + 1, str "AlexAcc(" . shows idx . str ")")
-    outputAccs idx (Acc _ Nothing lctx rctx : rest)
+    outputAccs _idx (Acc _ Nothing _lctx _rctx : _rest)
       = error "predicates not supported"
-    outputAccs idx (Acc _ (Just _) lctx rctx : rest)
+    outputAccs _idx (Acc _ (Just _) _lctx _rctx : _rest)
       = error "predicates not supported"
 
     outputActs :: Int -> [Accept Code] -> (Int, [ShowS])
@@ -113,27 +108,6 @@ outputDFA target _ _ scheme dfa
           (inneridx + 1, str act)
       in
         mapAccumR outputAct idx . filter (\(Acc _ act _ _) -> isJust act)
-
-    outputPred (Just set) NoRightContext
-        = outputLCtx set
-    outputPred Nothing rctx
-        = outputRCtx rctx
-    outputPred (Just set) rctx
-        = outputLCtx set
-        . str " `alexAndPred` "
-        . outputRCtx rctx
-
-    outputLCtx set = str "alexPrevCharMatches" . str (charSetQuote set)
-
-    outputRCtx NoRightContext = id
-    outputRCtx (RightContextRExp sn)
-        = str "alexRightContext " . shows sn
-    outputRCtx (RightContextCode code)
-        = str code
-
-    -- outputArr arr
-        -- = str "array " . shows (bounds arr) . space
-        -- . shows (assocs arr)
 
 -- -----------------------------------------------------------------------------
 -- Generating arrays.
