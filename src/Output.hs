@@ -71,7 +71,7 @@ outputDFA target _ _ _scheme dfa
       -- Don't emit explicit type signature as it contains unknown user type,
       -- see: https://github.com/simonmar/alex/issues/98
       -- str accept_nm . str " :: Array Int (AlexAcc " . str userStateTy . str ")\n"
-        str "const " . str accept_nm . str ": [AlexAcc<bool>; " . shows (n_states + 1)
+        str "const " . str accept_nm . str ": [AlexAcc; " . shows (n_states + 1)
       . str "] = "
       . formatArray "listArray" n_states (snd (mapAccumR outputAccs 0 accept))
       . nl

@@ -11,48 +11,25 @@
 compile_error!("GHC mode is not supported")
 #endif
 
-#define ILIT(n) (n)
-#define IBOX(n) (n)
-#define FAST_INT Int
-#define GTE(n,m) (n >= m)
-#define EQ(n,m) (n == m)
-#define PLUS(n,m) (n + m)
-#define MINUS(n,m) (n - m)
-#define TIMES(n,m) (n * m)
-#define NEGATE(n) (negate (n))
-#define IF_GHC(x)
-
-pub fn alexIndexInt16OffAddr(arr: &[isize], off: isize) -> isize {
-    arr[off as usize]
-}
-
-pub fn alexIndexInt32OffAddr(arr: &[isize], off: isize) -> isize {
-    arr[off as usize]
-}
-
-pub fn quickIndex<E>(arr: &[E], i: isize) -> &E {
-    &arr[i as usize]
-}
-
 // -----------------------------------------------------------------------------
 // Main lexing routines
 
-pub enum AlexReturn<T> {
+enum AlexReturn<T> {
     AlexEOF,
     AlexError(AlexInput),
     AlexSkip(AlexInput, isize),
     AlexToken(AlexInput, isize, T)
 }
-pub use self::AlexReturn::*;
+use self::AlexReturn::*;
 
-pub fn alexScan(input: (Position, InputStream), sc: isize)
-                -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>> {
+fn alexScan(input: (Position, InputStream), sc: isize)
+            -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>> {
     // TODO first argument should be "undefined"
     alexScanUser(false, input, sc)
 }
 
-pub fn alexScanUser(user: bool, input: AlexInput, sc: isize)
-                    -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>>
+fn alexScanUser(user: bool, input: AlexInput, sc: isize)
+                -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>>
 {
     match alex_scan_tkn(user, input.clone(), (0), input.clone(), sc, AlexNone) {
         (AlexNone, input_q) => {
@@ -90,10 +67,10 @@ pub fn alexScanUser(user: bool, input: AlexInput, sc: isize)
 /// Push the input through the DFA, remembering the most recent accepting
 /// state it encountered.
 
-pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, mut input: AlexInput,
-                     mut s: isize, mut last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
+fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, mut input: AlexInput,
+                 mut s: isize, mut last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
     fn check_accs<A: Clone>(user: A, orig_input: &AlexInput, len: isize, input: AlexInput,
-                            last_acc: AlexLastAcc, acc: &AlexAcc<A>) -> AlexLastAcc {
+                            last_acc: AlexLastAcc, acc: &AlexAcc) -> AlexLastAcc {
         match *acc {
             AlexAccNone => {
                 last_acc
@@ -104,7 +81,6 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
             AlexAccSkip => {
                 AlexLastSkip(input, len)
             },
-            _ => panic!("predicates are not supported")
         }
     };
 
@@ -118,18 +94,18 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
             },
             Some((c, new_input)) => {
 #ifdef ALEX_DEBUG
-                println!("State: {}, char: {}", IBOX(s), c);
+                println!("State: {}, char: {}", s, c);
 #endif
                 match c as isize {
                     ord_c => {
-                        let base = alexIndexInt32OffAddr(&ALEX_BASE, s);
+                        let base = ALEX_BASE[s as usize];
                         let offset = base + ord_c;
-                        let check = alexIndexInt16OffAddr(&ALEX_CHECK, offset);
+                        let check = ALEX_CHECK[offset as usize];
 
                         let new_s = if offset >= 0 && check == ord_c {
-                            alexIndexInt16OffAddr(&ALEX_TABLE, offset)
+                            ALEX_TABLE[offset as usize]
                         } else {
-                            alexIndexInt16OffAddr(&ALEX_DEFLT, s)
+                            ALEX_DEFLT[s as usize]
                         };
 
                         match new_s {
@@ -156,48 +132,16 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
     }
 }
 
-pub enum AlexLastAcc {
+enum AlexLastAcc {
     AlexNone,
     AlexLastAcc(isize, AlexInput, isize),
     AlexLastSkip(AlexInput, isize)
 }
-pub use self::AlexLastAcc::*;
+use self::AlexLastAcc::*;
 
-pub enum AlexAcc<T> {
+enum AlexAcc {
     AlexAccNone,
     AlexAcc(isize),
     AlexAccSkip,
-    AlexAccPred(isize, Box<AlexAccPred<T>>, Box<AlexAcc<T>>),
-    AlexAccSkipPred(Box<AlexAccPred<T>>, Box<AlexAcc<T>>)
 }
-pub use self::AlexAcc::*;
-
-pub type AlexAccPred<T> = Box<Fn(T, AlexInput, isize, AlexInput) -> bool>;
-
-// -----------------------------------------------------------------------------
-// Predicates on a rule
-
-pub fn alexAndPred<T: Clone>(p1: Box<Fn(T, AlexInput, isize, AlexInput) -> bool>,
-                             p2: Box<Fn(T, AlexInput, isize, AlexInput) -> bool>,
-                             user: T, in1: AlexInput, len: isize, in2: AlexInput) -> bool {
-    p1(user.clone(), in1.clone(), len, in2.clone()) && p2(user, in1, len, in2)
-}
-
-pub fn alexPrevCharIs(c: char, _: isize, input: AlexInput, _: isize, _: isize) -> bool {
-    c == alexInputPrevChar(input)
-}
-
-pub fn alexPrevCharMatches(f: Box<Fn(char) -> isize>, _: isize, input: AlexInput, _: isize, _: isize) -> isize {
-    f(alexInputPrevChar(input))
-}
-
-pub fn alexPrevCharIsOneOf(arr: Vec<bool>, _: isize, input: AlexInput, _: isize, _: AlexInput) -> bool {
-    arr[alexInputPrevChar(input) as usize]
-}
-
-pub fn alexRightContext(sc: isize, user: bool, _: AlexInput, _: isize, input: AlexInput) -> bool {
-    match alex_scan_tkn(user, input.clone(), (0), input, sc, AlexNone) {
-        (AlexNone, _) => false,
-        _ => true,
-    }
-}
+use self::AlexAcc::*;
