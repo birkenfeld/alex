@@ -84,8 +84,7 @@ outputDFA target _ _ _scheme dfa
         actionsArray = formatArray "array" nacts actsInOrder
         body :: ShowS
         body = str "const " . str actions_nm
-          . str ": [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>; "
-          . shows nacts . str "] = " . actionsArray . nl
+          . str ": [AlexAction; " . shows nacts . str "] = " . actionsArray . nl
 
     outputSigs = str ""
 
