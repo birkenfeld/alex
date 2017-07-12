@@ -337,7 +337,7 @@ optsToInject GhcTarget _ = error "GHC target is not supported"
 optsToInject _         _ = optNoWarnings
 
 optNoWarnings :: String
-optNoWarnings = ""         -- put global [allow(...)] heere
+optNoWarnings = "#![allow(unused_variables)]\n\n" -- put global [allow(...)] heere
 
 importsToInject :: Target -> [CLIFlags] -> String
 importsToInject _ cli = always_imports ++ debug_imports ++ glaexts_import
