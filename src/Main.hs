@@ -353,8 +353,7 @@ importsToInject _ cli = always_imports ++ debug_imports ++ glaexts_import
 -- WORDS_BIGENDIAN (see GenericTemplate.hs).
 
 always_imports :: String
-always_imports = "#[macro_use] use corollary_support::*;\n" ++
-                 "\n\n"
+always_imports = "\n\n"
 
 import_glaexts :: String
 import_glaexts = ""
