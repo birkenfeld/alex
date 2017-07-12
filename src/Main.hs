@@ -181,7 +181,7 @@ alex cli file basename script = do
            hPutStr out_h str
 
    -- Inject the tab size
-   hPutStrLn out_h $ "const ALEX_TAB_SIZE: isize = " ++ show (tab_size :: Int) ++ ";"
+   hPutStrLn out_h $ "#[allow(dead_code)] const ALEX_TAB_SIZE: isize = " ++ show (tab_size :: Int) ++ ";"
 
    let dfa = scanner2dfa encoding scanner_final scs
        min_dfa = minimizeDFA dfa
@@ -337,7 +337,7 @@ optsToInject GhcTarget _ = error "GHC target is not supported"
 optsToInject _         _ = optNoWarnings
 
 optNoWarnings :: String
-optNoWarnings = "// put #![allow(...)] here\n"
+optNoWarnings = ""         -- put global [allow(...)] heere
 
 importsToInject :: Target -> [CLIFlags] -> String
 importsToInject _ cli = always_imports ++ debug_imports ++ glaexts_import
