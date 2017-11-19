@@ -57,14 +57,12 @@ fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
 #ifdef ALEX_DEBUG
             println!("Skipping.");
 #endif
-            input.1.mark_read(len as usize);
             AlexSkip(len)
         },
         AlexLastAcc(k, len) => {
 #ifdef ALEX_DEBUG
             println!("Accept.");
 #endif
-            input.1.mark_read(len as usize);
             AlexToken(len, ALEX_ACTIONS[k as usize])
         },
     }
@@ -103,17 +101,12 @@ fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
                     ALEX_DEFLT[s as usize]
                 };
 
-                match new_s {
-                    -1 => return new_acc,
-                    _ => {
-                        len = if c < 128 || c >= 192 {
-                            len + 1
-                        } else {
-                            len
-                        };
-                        s = new_s;
-                        last_acc = new_acc;
-                    }
+                if new_s == -1 {
+                    return new_acc;
+                } else {
+                    len += if c < 128 || c >= 192 { 1 } else { 0 };
+                    s = new_s;
+                    last_acc = new_acc;
                 }
             }
         }
