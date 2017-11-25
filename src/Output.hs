@@ -89,11 +89,11 @@ outputDFA target _ _ _scheme dfa
     outputSigs = str ""
 
     outputAccs :: Int -> [Accept Code] -> (Int, ShowS)
-    outputAccs idx [] = (idx, str "AlexAccNone")
+    outputAccs idx [] = (idx, str "AlexAcc::None")
     outputAccs idx (Acc _ Nothing Nothing NoRightContext : [])
-      = (idx, str "AlexAccSkip")
+      = (idx, str "AlexAcc::Skip")
     outputAccs idx (Acc _ (Just _) Nothing NoRightContext : [])
-      = (idx + 1, str "AlexAcc(" . shows idx . str ")")
+      = (idx + 1, str "AlexAcc::Token(" . shows idx . str ")")
     outputAccs _idx (Acc _ Nothing _lctx _rctx : _rest)
       = error "predicates not supported"
     outputAccs _idx (Acc _ (Just _) _lctx _rctx : _rest)

@@ -4,7 +4,7 @@
 // This code is in the PUBLIC DOMAIN; you may copy it freely and use
 // it for any purpose whatsoever.
 //
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // INTERNALS and main scanner engine
 
 #ifdef ALEX_GHC
@@ -15,55 +15,52 @@ compile_error!("GHC mode is not supported")
 // Main lexing routines
 
 enum AlexReturn<T> {
-    AlexEOF,
-    AlexError,
-    AlexSkip(usize),
-    AlexToken(usize, usize, T)
+    EOF,
+    Error,
+    Skip(usize),
+    Token(usize, usize, T),
 }
-use self::AlexReturn::*;
 
 enum AlexLastAcc {
-    AlexNone,
-    AlexLastAcc(usize, usize, usize),
-    AlexLastSkip(usize)
+    None,
+    Skip(usize),
+    Token(usize, usize, usize),
 }
-use self::AlexLastAcc::*;
 
 enum AlexAcc {
-    AlexAccNone,
-    AlexAcc(usize),
-    AlexAccSkip,
+    None,
+    Skip,
+    Token(usize),
 }
-use self::AlexAcc::*;
 
 type AlexAction = fn(&mut Parser, Position, usize) -> Res<Token>;
 
 fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
     match alex_scan_tkn(input) {
-        AlexNone => {
+        AlexLastAcc::None => {
             if alexGetByte(input).is_some() {
 #ifdef ALEX_DEBUG
                 println!("Error.");
 #endif
-                AlexError
+                AlexReturn::Error
             } else {
 #ifdef ALEX_DEBUG
                 println!("End of input.");
 #endif
-                AlexEOF
+                AlexReturn::EOF
             }
         },
-        AlexLastSkip(len_bytes) => {
+        AlexLastAcc::Skip(len_bytes) => {
 #ifdef ALEX_DEBUG
             println!("Skipping.");
 #endif
-            AlexSkip(len_bytes)
+            AlexReturn::Skip(len_bytes)
         },
-        AlexLastAcc(k, len_bytes, len_chars) => {
+        AlexLastAcc::Token(k, len_bytes, len_chars) => {
 #ifdef ALEX_DEBUG
             println!("Accept.");
 #endif
-            AlexToken(len_bytes, len_chars, ALEX_ACTIONS[k])
+            AlexReturn::Token(len_bytes, len_chars, ALEX_ACTIONS[k])
         },
     }
 }
@@ -73,16 +70,16 @@ fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
 /// state it encountered.
 
 fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
-    let mut last_acc = AlexNone;
+    let mut last_acc = AlexLastAcc::None;
     let mut len_bytes = 0;
     let mut len_chars = 0;
     let mut s = 0;
     loop {
         let right = &ALEX_ACCEPT[s as usize];
         let new_acc = match *right {
-            AlexAccNone => last_acc,
-            AlexAcc(a)  => AlexLastAcc(a, len_bytes, len_chars),
-            AlexAccSkip => AlexLastSkip(len_bytes),
+            AlexAcc::None => last_acc,
+            AlexAcc::Token(a)  => AlexLastAcc::Token(a, len_bytes, len_chars),
+            AlexAcc::Skip => AlexLastAcc::Skip(len_bytes),
         };
 
         match alexGetByte(input) {
