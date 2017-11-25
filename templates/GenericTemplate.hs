@@ -17,26 +17,26 @@ compile_error!("GHC mode is not supported")
 enum AlexReturn<T> {
     AlexEOF,
     AlexError,
-    AlexSkip(isize),
-    AlexToken(isize, isize, T)
+    AlexSkip(usize),
+    AlexToken(usize, usize, T)
 }
 use self::AlexReturn::*;
 
 enum AlexLastAcc {
     AlexNone,
-    AlexLastAcc(isize, isize, isize),
-    AlexLastSkip(isize)
+    AlexLastAcc(usize, usize, usize),
+    AlexLastSkip(usize)
 }
 use self::AlexLastAcc::*;
 
 enum AlexAcc {
     AlexAccNone,
-    AlexAcc(isize),
+    AlexAcc(usize),
     AlexAccSkip,
 }
 use self::AlexAcc::*;
 
-type AlexAction = fn(&mut Parser, Position, isize) -> Res<Token>;
+type AlexAction = fn(&mut Parser, Position, usize) -> Res<Token>;
 
 fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
     match alex_scan_tkn(input) {
@@ -63,7 +63,7 @@ fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
 #ifdef ALEX_DEBUG
             println!("Accept.");
 #endif
-            AlexToken(len_bytes, len_chars, ALEX_ACTIONS[k as usize])
+            AlexToken(len_bytes, len_chars, ALEX_ACTIONS[k])
         },
     }
 }
