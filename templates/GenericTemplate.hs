@@ -35,10 +35,10 @@ enum AlexAcc {
 
 type AlexAction = fn(&mut Parser, Position, usize) -> Res<Token>;
 
-fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
+fn alex_scan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
     match alex_scan_tkn(input) {
         AlexLastAcc::None => {
-            if alexGetByte(input).is_some() {
+            if alex_get_byte(input).is_some() {
 #ifdef ALEX_DEBUG
                 println!("Error.");
 #endif
@@ -82,7 +82,7 @@ fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
             AlexAcc::Skip => AlexLastAcc::Skip(len_bytes),
         };
 
-        match alexGetByte(input) {
+        match alex_get_byte(input) {
             None => return new_acc,
             Some(c) => {
                 let c = c as isize;
